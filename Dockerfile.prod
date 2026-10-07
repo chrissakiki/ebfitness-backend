@@ -18,9 +18,10 @@ COPY App ./App
 RUN composer install --no-dev --no-interaction --optimize-autoloader
 
 COPY . .
-RUN mkdir -p public/uploads \
+RUN mkdir -p /opt/seed-uploads public/uploads \
+    && cp -a public/uploads/. /opt/seed-uploads/ \
     && chown -R www-data:www-data public/uploads
 
 EXPOSE 80
 
-CMD ["sh", "-c", "chown -R www-data:www-data /var/www/html/public/uploads && apache2-foreground"]
+CMD ["sh", "-c", "if [ -z \"$(ls -A /var/www/html/public/uploads 2>/dev/null)\" ]; then cp -a /opt/seed-uploads/. /var/www/html/public/uploads/; fi && chown -R www-data:www-data /var/www/html/public/uploads && apache2-foreground"]
