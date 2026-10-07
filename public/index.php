@@ -6,8 +6,8 @@ define('PROJECT_ROOT', __DIR__ . '/..');
 use Dotenv\Dotenv;
 
 // Point to the root directory (where your .env file exists)
-$dotenv = Dotenv::createImmutable(__DIR__ . '/../');  // Make sure this is pointing to your project's root
-$dotenv->load();  // Load the environment variables from the .env file
+$dotenv = Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->safeLoad();
 
 
 use Framework\Router;

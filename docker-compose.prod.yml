@@ -1,0 +1,41 @@
+name: ebfitness-api
+
+services:
+  api:
+    image: ebfitness-api-prod
+    build:
+      context: .
+      dockerfile: Dockerfile.prod
+    env_file:
+      - .env
+    environment:
+      host: db
+    ports:
+      - "127.0.0.1:8000:80"
+    volumes:
+      - ebfitness-uploads:/var/www/html/public/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    restart: unless-stopped
+
+  db:
+    image: mysql:8.0
+    environment:
+      MYSQL_DATABASE: ${dbname}
+      MYSQL_USER: ${username}
+      MYSQL_PASSWORD: ${password}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+    volumes:
+      - ebfitness-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p$$MYSQL_ROOT_PASSWORD"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 20s
+    restart: unless-stopped
+
+volumes:
+  ebfitness-mysql-data:
+  ebfitness-uploads:
