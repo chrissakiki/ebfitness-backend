@@ -1,0 +1,67 @@
+# PHP API + MySQL for ebfitness.co.
+# Caddy stays on the host and proxies /api and /uploads here, same idea as the Next.js port forward.
+#
+#   cp compose.env.example compose.env
+#   # put the phpMyAdmin export at docker/mysql/init/elie_badawi.sql BEFORE the first start
+#   docker compose --env-file compose.env up -d --build
+
+services:
+  php:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - compose.env
+    environment:
+      # Inside the container, MySQL is the service name, not localhost.
+      host: mysql
+      port: "3306"
+      dbname: ${MYSQL_DATABASE}
+      charset: ${DB_CHARSET:-utf8}
+      username: ${MYSQL_USER}
+      password: ${MYSQL_PASSWORD}
+      APP_URL: ${APP_URL}
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY}
+      COOKIE_EXPIRY_TIME: ${COOKIE_EXPIRY_TIME}
+    ports:
+      - "127.0.0.1:${PHP_PORT:-8080}:80"
+    volumes:
+      - uploads:/var/www/html/public/uploads
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:8.0
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - mysql_data:/var/lib/mysql
+      # *.sql files here run only when the data volume is created for the first time.
+      - ./docker/mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$$MYSQL_ROOT_PASSWORD\""]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 20s
+
+  # Replacement for phpMyAdmin. Not started unless you pass --profile admin.
+  # Reach it through an SSH tunnel: ssh -L 8081:127.0.0.1:8081 user@your-vps
+  # Server name inside Adminer: mysql
+  adminer:
+    image: adminer:4
+    profiles: ["admin"]
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${ADMINER_PORT:-8081}:8080"
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+volumes:
+  mysql_data:
+  uploads:

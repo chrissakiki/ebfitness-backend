@@ -1,0 +1,5 @@
+.env
+compose.env
+/vendor/
+/public/uploads/
+/docker/mysql/init/*.sql

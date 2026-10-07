@@ -1,0 +1,25 @@
+# Add this site to the Caddyfile that already proxies the Next.js app, then:
+#   sudo caddy reload --config /etc/caddy/Caddyfile
+#
+# Build the React app first (npm run build) and copy the contents of dist/
+# to /var/www/ebfitness on the VPS. Change that path if you put it somewhere else.
+# PHP_PORT below must match compose.env (default 8080).
+
+ebfitness.co {
+	redir https://www.ebfitness.co{uri} permanent
+}
+
+www.ebfitness.co {
+	encode zstd gzip
+
+	@backend path /api /api/* /uploads /uploads/*
+	handle @backend {
+		reverse_proxy 127.0.0.1:8080
+	}
+
+	handle {
+		root * /var/www/ebfitness
+		try_files {path} /index.html
+		file_server
+	}
+}
